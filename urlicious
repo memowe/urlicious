@@ -1,0 +1,208 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use Mojolicious::Lite;
+use Mojo::JSON;
+
+my $urlsfn  = 'urls.json';
+my $json    = Mojo::JSON->new;
+
+sub _get_data {
+    return { } unless -f $urlsfn and -r $urlsfn;
+    open my $fh, '<', $urlsfn or die "couldn't open $urlsfn: $!";
+    return $json->decode( join $/ => <$fh> );
+}
+
+sub _get_url { _get_data()->{shift()} }
+
+sub _get_alias {
+    my $url     = shift;
+    my %urls    = %{ _get_data() };
+    my %alias   = reverse %urls;
+    return $alias{$url} if exists $alias{$url};
+    
+    my $alias;
+    my @chars = ( 'a' .. 'z', 'A' .. 'Z', 0 .. 9 );
+    do {
+        $alias = join '' => map { $chars[ rand @chars ] } 1 .. 4;
+    } while exists $urls{$alias};
+
+    $urls{$alias} = $url;
+
+    open my $fh, '>', $urlsfn or die "couldn't write $urlsfn: $!";
+    print $fh $json->encode( \%urls );
+
+    return $alias;
+}
+
+app->renderer->types->type( html => 'text/html; charset=utf-8' );
+app->renderer->add_helper( stash => sub { shift->stash(@_) } );
+
+get '/' => 'form';
+
+post '/post' => sub {
+    my $self    = shift;
+    my $url     = $self->param('url') || 'http://www.perl.org/';
+    $self->stash(
+        url     => $url,
+        alias   => _get_alias($url),
+    );
+} => 'post';
+
+get '/:alias' => sub {
+    my $self = shift;
+
+    if ( my $url = _get_url( $self->param('alias') ) ) {
+        $self->redirect_to($url);
+        return;
+    }
+    else {
+        $self->render(
+            status      => 404,
+            template    => 'not_found',
+        );
+    }
+};
+
+shagadelic;
+__DATA__
+
+@@ form.html.ep
+% layout 'outer';
+<form action="/post" method="post">
+<fieldset><legend>Get a smaller URL!</legend>
+<p>
+    <label for="url">Your fat URL</label>:
+    <input type="text" name="url" id="url">
+    <input type="submit" value="make it shorter!">
+</p>
+</fieldset>
+
+@@ post.html.ep
+% layout 'outer';
+% ( my $texturl = $url ) =~ s/^(.{42}).+$/$1.../;
+% my $newurl    = $self->req->url->base . "/$alias";
+% my $ratio     = length($newurl) / length($url);
+% my $shorterp  = ( 1 - $ratio ) * 100;
+<p>Done. We created an alias for your URL:</p>
+<table>
+    <tr>
+        <th>Your URL:</th>
+        <td><a href="<%= $url %>"><%= $texturl %></a></td>
+    </tr>
+    <tr>
+        <th>The new alias:</th>
+        <td>
+            <a href="<%= $newurl %>"><%= $newurl %></a>
+            (<%= int($shorterp) %>% shorter)
+        </td>
+    </tr>
+</table>
+
+@@ layouts/outer.html.ep
+<!doctype html>
+<html>
+<head>
+<title>Urlicious!</title>
+<style type="text/css">
+html, body {
+    margin          : 0;
+    padding         : 0;
+    font-family     : sans-serif;
+    line-height     : 150%;
+}
+body {
+    color           : black;
+    background-color: #bbc;
+}
+#content {
+    width           : 76ex;
+    color           : black;
+    background-color: #f0f0f8;
+    margin          : 0 auto 1em;
+    padding         : 4.5em 6ex 4.5em;
+    border          : solid #99a;
+    border-width    : 0 thick thick;
+}
+h1 {
+    font-family     : 'Trebuchet MS', sans-serif;
+    font-weight     : bold;
+    font-size       : 4em;
+    margin          : 0 0 .5em;
+    padding         : 0 0 .5em;
+    border-bottom   : thick solid #d0d0e0;
+    text-align      : center;
+}
+h1 a {
+    text-decoration : none;
+    color           : black !IMPORTANT;
+}
+fieldset {
+    border          : medium solid #d0d0e0;
+    background-color: white;
+    color           : black;
+    padding         : 1em 4ex;
+}
+legend {
+    background-color: #d0d0e0;
+    color           : black;
+    padding         : .2em 2ex;
+    border-radius   : 1em; -moz-border-radius: 1em; -webkit-border-radius: 1em;
+}
+input[type=text] {
+    width           : 20ex;
+    padding         : .2em .5ex;
+    font-size       : 1em;
+    color           : #666;
+    background-color: #d0d0e0;
+    margin          : 0 1em;
+    border          : thin solid black;
+}
+input[type=text]:focus {
+    color           : black;
+    background-color: #f0f0f8;
+}
+input[type=submit] {
+    font-size       : 1em;
+}
+table {
+    color           : black;
+    background-color: white;
+}
+th, td {
+    padding         : .5em 3ex .5em 0;
+    font-weight     : normal;
+}
+th {
+    padding-left    : 3ex;
+    text-align      : right;
+}
+a {
+    color           : black;
+    background-color: transparent;
+}
+a:visited {
+    color           : #666;
+    background-color: transparent;
+</style>
+</head>
+<body>
+<div id="content">
+<h1><a href="/">urlicious!</a></h1>
+%== content;
+</div>
+</body>
+</html>
+
+@@ not_found.html.ep
+% layout 'outer';
+<p>The requested resource
+    <em><%= $self->req->url->to_abs %></em>
+could not be found. Sorry.</p>
+
+@@ exception.html.ep
+<!doctype html>
+<html><head><title>Aargh!</title></head>
+<body><h1>Aargh!</h1><hr><pre class="exception"><%= $exception %></pre></body>
