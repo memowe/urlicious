@@ -37,7 +37,7 @@ sub _get_alias {
     return $alias;
 }
 
-app->renderer->types->type( html => 'text/html; charset=utf-8' );
+plugin charset => {charset => 'utf-8'};
 
 get '/' => 'form';
 
