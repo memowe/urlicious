@@ -6,36 +6,14 @@ use warnings;
 use Mojolicious::Lite;
 use Mojo::JSON;
 
-my $urlsfn  = 'urls.json';
+my $urlsfn  = app->home->rel_file('urls.json');
 my $json    = Mojo::JSON->new;
+my %urls    = ();
 
-sub _get_data {
-    return { } unless -f $urlsfn and -r $urlsfn;
-    open my $fh, '<', $urlsfn or die "couldn't open $urlsfn: $!";
-    return $json->decode( join $/ => <$fh> );
-}
-
-sub _get_url { _get_data()->{shift()} }
-
-sub _get_alias {
-    my $url     = shift;
-    my %urls    = %{ _get_data() };
-    my %alias   = reverse %urls;
-    return $alias{$url} if exists $alias{$url};
-    
-    my $alias;
-    my @chars = ( 'a' .. 'z', 'A' .. 'Z', 0 .. 9 );
-    do {
-        $alias = join '' => map { $chars[ rand @chars ] } 1 .. 4;
-    } while exists $urls{$alias};
-
-    $urls{$alias} = $url;
-
-    open my $fh, '>', $urlsfn or die "couldn't write $urlsfn: $!";
-    print $fh $json->encode( \%urls );
-
-    return $alias;
-}
+# load aliases from urls file
+open my $fh, '<', $urlsfn or die "couldn't open $urlsfn: $!";
+my $urls_json = join '' => <$fh>;
+%urls = %{ $json->decode($urls_json) };
 
 plugin charset => {charset => 'utf-8'};
 
@@ -44,10 +22,33 @@ get '/' => 'form';
 post '/post' => sub {
     my $self = shift;
 
-    # generate an alias for the url
     my $url     = $self->param('url') // 'http://www.perl.org';
-    my $alias   = _get_alias($url);
+    my %alias   = reverse %urls;
+    my $alias;
 
+    # alias already exists
+    if (exists $alias{$url}) {
+        $alias = $alias{$url}
+    }
+
+    # alias needs to be created
+    else {
+    
+        # generate a new alias: four characters of [a-zA-Z0-9]
+        my @chars = ( 'a' .. 'z', 'A' .. 'Z', 0 .. 9 );
+        do {
+            $alias = join '' => map {$chars[rand @chars]} 1 .. 4;
+        } while exists $urls{$alias};
+
+        # update %urls
+        $urls{$alias} = $url;
+
+        # write to file
+        open my $fh, '>', $urlsfn or die "couldn't write $urlsfn: $!";
+        print $fh $json->encode(\%urls);
+    }
+
+    # show generated alias
     $self->stash(url => $url, alias => $alias);
 };
 
@@ -55,7 +56,7 @@ get '/:alias' => sub {
     my $self = shift;
 
     # try to lookup
-    my $url = _get_url($self->param('alias'));
+    my $url = $urls{$self->param('alias')};
 
     # alias unknown
     $self->render_not_found and return unless $url;
