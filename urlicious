@@ -42,30 +42,29 @@ plugin charset => {charset => 'utf-8'};
 get '/' => 'form';
 
 post '/post' => sub {
-    my $self    = shift;
-    my $url     = $self->param('url') || 'http://www.perl.org/';
-    $self->stash(
-        url     => $url,
-        alias   => _get_alias($url),
-    );
-} => 'post';
+    my $self = shift;
+
+    # generate an alias for the url
+    my $url     = $self->param('url') // 'http://www.perl.org';
+    my $alias   = _get_alias($url);
+
+    $self->stash(url => $url, alias => $alias);
+};
 
 get '/:alias' => sub {
     my $self = shift;
 
-    if ( my $url = _get_url( $self->param('alias') ) ) {
-        $self->redirect_to($url);
-        return;
-    }
-    else {
-        $self->render(
-            status      => 404,
-            template    => 'not_found',
-        );
-    }
+    # try to lookup
+    my $url = _get_url($self->param('alias'));
+
+    # alias unknown
+    $self->render_not_found and return unless $url;
+
+    # alias exists: redirect
+    $self->redirect_to($url);
 };
 
-shagadelic;
+app->start;
 __DATA__
 
 @@ form.html.ep
@@ -114,17 +113,6 @@ __DATA__
 </div>
 </body>
 </html>
-
-@@ not_found.html.ep
-% layout 'outer';
-<p>The requested resource
-    <em><%= $self->req->url->to_abs %></em>
-could not be found. Sorry.</p>
-
-@@ exception.html.ep
-<!doctype html>
-<html><head><title>Aargh!</title></head>
-<body><h1>Aargh!</h1><hr><pre class="exception"><%= $exception %></pre></body>
 
 @@ style.css
 html, body { margin: 0; padding: 0; font-family: sans-serif; line-height: 150% }
