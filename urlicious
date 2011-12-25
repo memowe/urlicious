@@ -105,87 +105,7 @@ __DATA__
 <html>
 <head>
 <title>Urlicious!</title>
-<style type="text/css">
-html, body {
-    margin          : 0;
-    padding         : 0;
-    font-family     : sans-serif;
-    line-height     : 150%;
-}
-body {
-    color           : black;
-    background-color: #bbc;
-}
-#content {
-    width           : 76ex;
-    color           : black;
-    background-color: #f0f0f8;
-    margin          : 0 auto 1em;
-    padding         : 4.5em 6ex 4.5em;
-    border          : solid #99a;
-    border-width    : 0 thick thick;
-}
-h1 {
-    font-family     : 'Trebuchet MS', sans-serif;
-    font-weight     : bold;
-    font-size       : 4em;
-    margin          : 0 0 .5em;
-    padding         : 0 0 .5em;
-    border-bottom   : thick solid #d0d0e0;
-    text-align      : center;
-}
-h1 a {
-    text-decoration : none;
-    color           : black !IMPORTANT;
-}
-fieldset {
-    border          : medium solid #d0d0e0;
-    background-color: white;
-    color           : black;
-    padding         : 1em 4ex;
-}
-legend {
-    background-color: #d0d0e0;
-    color           : black;
-    padding         : .2em 2ex;
-    border-radius   : 1em; -moz-border-radius: 1em; -webkit-border-radius: 1em;
-}
-input[type=text] {
-    width           : 20ex;
-    padding         : .2em .5ex;
-    font-size       : 1em;
-    color           : #666;
-    background-color: #d0d0e0;
-    margin          : 0 1em;
-    border          : thin solid black;
-}
-input[type=text]:focus {
-    color           : black;
-    background-color: #f0f0f8;
-}
-input[type=submit] {
-    font-size       : 1em;
-}
-table {
-    color           : black;
-    background-color: white;
-}
-th, td {
-    padding         : .5em 3ex .5em 0;
-    font-weight     : normal;
-}
-th {
-    padding-left    : 3ex;
-    text-align      : right;
-}
-a {
-    color           : black;
-    background-color: transparent;
-}
-a:visited {
-    color           : #666;
-    background-color: transparent;
-</style>
+<link rel="stylesheet" type="text/css" href="<%= url_for 'style.css' %>">
 </head>
 <body>
 <div id="content">
@@ -205,3 +125,20 @@ could not be found. Sorry.</p>
 <!doctype html>
 <html><head><title>Aargh!</title></head>
 <body><h1>Aargh!</h1><hr><pre class="exception"><%= $exception %></pre></body>
+
+@@ style.css
+html, body { margin: 0; padding: 0; font-family: sans-serif; line-height: 150% }
+body { color: black; background-color: #bbc }
+#content { width: 76ex; color: black; background-color: #f0f0f8; margin: 0 auto 1em; padding: 4.5em 6ex 4.5em; border: solid #99a; border-width: 0 thick thick }
+h1 { font-family: 'Trebuchet MS', sans-serif; font-weight: bold; font-size: 4em; margin: 0 0 .5em; padding: 0 0 .5em; border-bottom: thick solid #d0d0e0; text-align: center }
+h1 a { text-decoration: none; color: black !IMPORTANT }
+fieldset { border: medium solid #d0d0e0; background-color: white; color: black; padding: 1em 4ex }
+legend { background-color: #d0d0e0; color: black; padding: .2em 2ex; border-radius: 1em }
+input[type=text] { width: 20ex; padding: .2em .5ex; font-size: 1em; color: #666; background-color: #d0d0e0; margin: 0 1em; border: thin solid black }
+input[type=text]:focus { color: black; background-color: #f0f0f8 }
+input[type=submit] { font-size: 1em }
+table { color: black; background-color: white }
+th, td { padding: .5em 3ex .5em 0; font-weight: normal }
+th { padding-left: 3ex; text-align: right }
+a { color: black; background-color: transparent }
+a:visited { color: #666; background-color: transparent }
