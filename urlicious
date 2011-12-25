@@ -38,7 +38,6 @@ sub _get_alias {
 }
 
 app->renderer->types->type( html => 'text/html; charset=utf-8' );
-app->renderer->add_helper( stash => sub { shift->stash(@_) } );
 
 get '/' => 'form';
 
