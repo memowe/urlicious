@@ -6,14 +6,16 @@ use warnings;
 use Mojolicious::Lite;
 use Mojo::JSON;
 
-my $urlsfn  = app->home->rel_file('urls.json');
+my $urlsfn  = $ENV{URLICIOUS_JSON_FILE} // app->home->rel_file('urls.json');
 my $json    = Mojo::JSON->new;
 my %urls    = ();
 
-# load aliases from urls file
-open my $fh, '<', $urlsfn or die "couldn't open $urlsfn: $!";
-my $urls_json = join '' => <$fh>;
-%urls = %{ $json->decode($urls_json) };
+# load aliases from urls file (if it exists)
+if (-f $urlsfn) {
+    open my $fh, '<', $urlsfn or die "couldn't open $urlsfn: $!";
+    my $urls_json = join '' => <$fh>;
+    %urls = %{ $json->decode($urls_json) };
+}
 
 plugin charset => {charset => 'utf-8'};
 
@@ -63,14 +65,14 @@ get '/:alias' => sub {
 
     # alias exists: redirect
     $self->redirect_to($url);
-};
+} => 'alias';
 
 app->start;
 __DATA__
 
 @@ form.html.ep
 % layout 'outer';
-<form action="/post" method="post">
+<form action="<%= url_for 'post' %>" method="post">
 <fieldset><legend>Get a smaller URL!</legend>
 <p>
     <label for="url">Your fat URL</label>:
@@ -82,7 +84,7 @@ __DATA__
 @@ post.html.ep
 % layout 'outer';
 % ( my $texturl = $url ) =~ s/^(.{42}).+$/$1.../;
-% my $newurl    = $self->req->url->base . "/$alias";
+% my $newurl    = url_for('alias', alias => $alias)->to_abs;
 % my $ratio     = length($newurl) / length($url);
 % my $shorterp  = ( 1 - $ratio ) * 100;
 <p>Done. We created an alias for your URL:</p>
@@ -104,7 +106,7 @@ __DATA__
 <!doctype html>
 <html>
 <head>
-<title>Urlicious!</title>
+<title>urlicious!</title>
 <link rel="stylesheet" type="text/css" href="<%= url_for 'style.css' %>">
 </head>
 <body>
